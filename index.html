@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juego de Memoria</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #2c3e50;
+      color: #ecf0f1;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .memory-game {
+      display: grid;
+      grid-template-columns: repeat(4, 120px);
+      grid-gap: 15px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .card {
+      width: 120px;
+      height: 120px;
+      background-color: #3498db;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s;
+    }
+
+    .card:hover {
+      transform: scale(1.1);
+    }
+
+    .card.flipped, .card.matched {
+      background-color: #ecf0f1;
+      font-size: 2rem;
+      color: #2c3e50;
+      cursor: default;
+    }
+
+    .info {
+      margin-top: 20px;
+      font-size: 1.2rem;
+    }
+
+    .info span {
+      font-weight: bold;
+      color: #f1c40f;
+    }
+
+    .next-level {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      background-color: #e74c3c;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .next-level:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <h1>Juego de Memoria</h1>
+  <div class="info">Tiempo restante: <span id="timer">90</span> segundos | Puntos: <span id="score">0</span></div>
+  <div class="memory-game" id="memory-game"></div>
+  <button id="next-level" class="next-level">Siguiente Nivel</button>
+
+  <script>
+    const gameContainer = document.getElementById('memory-game');
+    const timerDisplay = document.getElementById('timer');
+    const scoreDisplay = document.getElementById('score');
+    const nextLevelButton = document.getElementById('next-level');
+
+    let icons = ['🍎', '🍌', '🍇', '🍓', '🍒', '🍉', '🍍', '🥭'];
+    let firstCard = null;
+    let secondCard = null;
+    let lockBoard = false;
+    let score = 0;
+    let timeLeft = 90;
+    let level = 1;
+
+    function startGame() {
+      resetGameBoard();
+      renderCards();
+      startTimer();
+    }
+
+    function resetGameBoard() {
+      gameContainer.innerHTML = '';
+      firstCard = null;
+      secondCard = null;
+      lockBoard = false;
+    }
+
+    function renderCards() {
+      const cards = [...icons, ...icons].sort(() => 0.5 - Math.random());
+      cards.forEach(icon => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.icon = icon;
+        card.addEventListener('click', flipCard);
+        gameContainer.appendChild(card);
+      });
+    }
+
+    function flipCard() {
+      if (lockBoard || this === firstCard || this.classList.contains('matched')) return;
+
+      this.classList.add('flipped');
+      this.textContent = this.dataset.icon;
+
+      if (!firstCard) {
+        firstCard = this;
+        return;
+      }
+
+      secondCard = this;
+      checkForMatch();
+    }
+
+    function checkForMatch() {
+      lockBoard = true;
+      const isMatch = firstCard.dataset.icon === secondCard.dataset.icon;
+
+      if (isMatch) {
+        firstCard.classList.add('matched');
+        secondCard.classList.add('matched');
+        score += 10;
+        updateScore();
+        checkIfGameFinished();
+      } else {
+        setTimeout(() => {
+          firstCard.classList.remove('flipped');
+          secondCard.classList.remove('flipped');
+          firstCard.textContent = '';
+          secondCard.textContent = '';
+        }, 1000);
+      }
+
+      setTimeout(resetBoard, 1000);
+    }
+
+    function resetBoard() {
+      [firstCard, secondCard] = [null, null];
+      lockBoard = false;
+    }
+
+    function updateScore() {
+      scoreDisplay.textContent = score;
+    }
+
+    function startTimer() {
+      const timerInterval = setInterval(() => {
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          endGame();
+        } else {
+          timeLeft--;
+          timerDisplay.textContent = timeLeft;
+        }
+      }, 1000);
+    }
+
+    function checkIfGameFinished() {
+      const allMatched = document.querySelectorAll('.card.matched').length === icons.length * 2;
+      if (allMatched) {
+        if (score >= 60 && score <= 80) {
+          nextLevelButton.style.display = 'inline-block';
+        } else {
+          alert(`No alcanzaste el puntaje mínimo. Puntos obtenidos: ${score}. Reiniciando el juego.`);
+          score = 0;
+          scoreDisplay.textContent = score;
+          timeLeft = 90;
+          startGame();
+        }
+      }
+    }
+
+    function endGame() {
+      if (score >= 60 && score <= 80) {
+        nextLevelButton.style.display = 'inline-block';
+      } else {
+        alert(`Juego terminado. Puntuación final: ${score}. Reiniciando...`);
+        score = 0;
+        scoreDisplay.textContent = score;
+        timeLeft = 90;
+        startGame();
+      }
+    }
+
+    nextLevelButton.addEventListener('click', () => {
+      level++;
+      icons.push('🍏', '🥝', '🍋', '🍐'); // Add new icons for increased difficulty
+      timeLeft = 90; // Reset timer
+      score = 0; // Reset score for new level
+      scoreDisplay.textContent = score;
+      nextLevelButton.style.display = 'none';
+      startGame();
+    });
+
+    startGame();
+  </script>
+</body>
+</html>
